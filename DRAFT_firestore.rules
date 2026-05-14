@@ -1,0 +1,138 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitives
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+    
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isOwner() { return isSignedIn() && existing().ownerId == request.auth.uid; }
+    function isIncomingOwner() { return isSignedIn() && incoming().ownerId == request.auth.uid; }
+
+    function isValidProject(data) {
+      return data.keys().hasAll(['name', 'ownerId', 'createdAt'])
+        && data.name is string && data.createdAt is number && data.ownerId is string;
+    }
+
+    function isValidCalculation(data) {
+      return data.keys().hasAll(['calculatorKey', 'title', 'ownerId', 'createdAt'])
+        && data.calculatorKey is string && data.title is string && data.ownerId is string && data.createdAt is number;
+    }
+    
+    function isValidKnowledgeItem(data) {
+      return data.keys().hasAll(['title', 'content', 'ownerId', 'createdAt'])
+        && data.title is string && data.content is string && data.ownerId is string && data.createdAt is number;
+    }
+
+    function isValidPunchListItem(data) {
+      return data.keys().hasAll(['title', 'status', 'ownerId', 'createdAt'])
+        && data.title is string && data.ownerId is string && data.createdAt is number
+        && data.status in ['Open', 'In Progress', 'Completed'];
+    }
+
+    function isValidDailyReport(data) {
+      return data.keys().hasAll(['date', 'ownerId', 'createdAt'])
+        && data.date is number && data.ownerId is string && data.createdAt is number;
+    }
+
+    function isValidInventoryItem(data) {
+      return data.keys().hasAll(['name', 'status', 'ownerId', 'createdAt'])
+        && data.name is string && data.status in ['In Stock', 'In Use', 'Maintenance', 'Lost']
+        && data.ownerId is string && data.createdAt is number;
+    }
+
+    function isValidAudit(data) {
+      return data.keys().hasAll(['type', 'date', 'status', 'ownerId', 'createdAt'])
+        && data.type is string && data.date is number && data.ownerId is string && data.createdAt is number
+        && data.status in ['Draft', 'Completed'];
+    }
+
+    function isValidSafetyBriefing(data) {
+      return data.keys().hasAll(['title', 'date', 'ownerId', 'createdAt'])
+        && data.title is string && data.date is number && data.ownerId is string && data.createdAt is number;
+    }
+
+    function isValidRFI(data) {
+      return data.keys().hasAll(['title', 'question', 'status', 'priority', 'ownerId', 'createdAt'])
+        && data.title is string && data.question is string && data.ownerId is string && data.createdAt is number
+        && data.status in ['Open', 'In Review', 'Answered', 'Closed']
+        && data.priority in ['Low', 'Medium', 'High'];
+    }
+
+    function isValidMessage(data) {
+        return data.keys().hasAll(['text', 'senderId', 'ownerId', 'createdAt'])
+          && data.text is string && data.senderId is string && data.ownerId is string;
+    }
+
+    // Roots
+    match /users/{userId} {
+      allow get: if isSignedIn() && userId == request.auth.uid;
+      allow list: if isSignedIn() && existing().email == request.auth.token.email;
+      allow create: if isSignedIn() && userId == request.auth.uid;
+      allow update: if isSignedIn() && userId == request.auth.uid;
+      allow delete: if isSignedIn() && userId == request.auth.uid;
+    }
+
+    match /projects/{id} {
+      allow get, list, delete: if isOwner();
+      allow create: if isIncomingOwner() && isValidProject(incoming());
+      allow update: if isOwner() && isIncomingOwner() && incoming().createdAt == existing().createdAt;
+    }
+    match /calculations/{id} {
+      allow get, list, delete: if isOwner();
+      allow create: if isIncomingOwner() && isValidCalculation(incoming());
+      allow update: if isOwner() && isIncomingOwner() && incoming().createdAt == existing().createdAt;
+    }
+    match /knowledge/{id} {
+      allow get, list, delete: if isOwner();
+      allow create: if isIncomingOwner() && isValidKnowledgeItem(incoming());
+      allow update: if isOwner() && isIncomingOwner() && incoming().createdAt == existing().createdAt;
+    }
+    match /punch_lists/{id} {
+      allow get, list, delete: if isOwner();
+      allow create: if isIncomingOwner() && isValidPunchListItem(incoming());
+      allow update: if isOwner() && isIncomingOwner() && incoming().createdAt == existing().createdAt;
+    }
+    match /daily_reports/{id} {
+      allow get, list, delete: if isOwner();
+      allow create: if isIncomingOwner() && isValidDailyReport(incoming());
+      allow update: if isOwner() && isIncomingOwner() && incoming().createdAt == existing().createdAt;
+    }
+    match /inventory/{id} {
+      allow get, list, delete: if isOwner();
+      allow create: if isIncomingOwner() && isValidInventoryItem(incoming());
+      allow update: if isOwner() && isIncomingOwner() && incoming().createdAt == existing().createdAt;
+    }
+    match /audits/{id} {
+      allow get, list, delete: if isOwner();
+      allow create: if isIncomingOwner() && isValidAudit(incoming());
+      allow update: if isOwner() && isIncomingOwner() && incoming().createdAt == existing().createdAt;
+    }
+    match /safety_briefings/{id} {
+      allow get, list, delete: if isOwner();
+      allow create: if isIncomingOwner() && isValidSafetyBriefing(incoming());
+      allow update: if isOwner() && isIncomingOwner() && incoming().createdAt == existing().createdAt;
+    }
+    match /rfis/{id} {
+      allow get, list, delete: if isOwner();
+      allow create: if isIncomingOwner() && isValidRFI(incoming());
+      allow update: if isOwner() && isIncomingOwner() && incoming().createdAt == existing().createdAt;
+    }
+    match /messages/{id} {
+      allow get, list, delete: if isOwner();
+      allow create: if isIncomingOwner() && isValidMessage(incoming());
+      allow update: if isOwner() && isIncomingOwner() && incoming().createdAt == existing().createdAt;
+    }
+  }
+}

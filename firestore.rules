@@ -1,0 +1,94 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitives
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+    
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isOwner() { return isSignedIn() && existing().ownerId == request.auth.uid; }
+    function isIncomingOwner() { return isSignedIn() && incoming().ownerId == request.auth.uid; }
+
+    function isValidVehicle(data) {
+      return data.keys().hasAll(['make', 'model', 'year', 'ownerId', 'createdAt'])
+        && data.make is string && data.model is string && data.year is number && data.ownerId is string && data.createdAt is number;
+    }
+
+    function isValidDiagnostic(data) {
+      return data.keys().hasAll(['vehicleId', 'ownerId', 'createdAt'])
+        && data.vehicleId is string && data.ownerId is string && data.createdAt is number;
+    }
+    
+    function isValidInspection(data) {
+      return data.keys().hasAll(['vehicleId', 'photoUrl', 'ownerId', 'createdAt'])
+        && data.vehicleId is string && data.photoUrl is string && data.ownerId is string && data.createdAt is number;
+    }
+
+    function isValidPart(data) {
+      return data.keys().hasAll(['name', 'status', 'ownerId', 'createdAt'])
+        && data.name is string && data.status in ['Needed', 'Ordered', 'In Stock'] 
+        && data.ownerId is string && data.createdAt is number;
+    }
+
+    function isValidHealthReport(data) {
+      return data.keys().hasAll(['vehicleId', 'title', 'ownerId', 'createdAt'])
+        && data.vehicleId is string && data.title is string && data.ownerId is string && data.createdAt is number;
+    }
+
+    function isValidMessage(data) {
+        return data.keys().hasAll(['text', 'senderId', 'ownerId', 'createdAt'])
+          && data.text is string && data.senderId is string && data.ownerId is string;
+    }
+
+    // Roots
+    match /users/{userId} {
+      allow get: if isSignedIn() && userId == request.auth.uid;
+      allow list: if isSignedIn() && existing().email == request.auth.token.email;
+      allow create: if isSignedIn() && userId == request.auth.uid;
+      allow update: if isSignedIn() && userId == request.auth.uid;
+      allow delete: if isSignedIn() && userId == request.auth.uid;
+    }
+
+    match /vehicles/{id} {
+      allow get, list, delete: if isOwner();
+      allow create: if isIncomingOwner() && isValidVehicle(incoming());
+      allow update: if isOwner() && isIncomingOwner() && incoming().createdAt == existing().createdAt;
+    }
+    match /diagnostics/{id} {
+      allow get, list, delete: if isOwner();
+      allow create: if isIncomingOwner() && isValidDiagnostic(incoming());
+      allow update: if isOwner() && isIncomingOwner() && incoming().createdAt == existing().createdAt;
+    }
+    match /inspections/{id} {
+      allow get, list, delete: if isOwner();
+      allow create: if isIncomingOwner() && isValidInspection(incoming());
+      allow update: if isOwner() && isIncomingOwner() && incoming().createdAt == existing().createdAt;
+    }
+    match /parts/{id} {
+      allow get, list, delete: if isOwner();
+      allow create: if isIncomingOwner() && isValidPart(incoming());
+      allow update: if isOwner() && isIncomingOwner() && incoming().createdAt == existing().createdAt;
+    }
+    match /health_reports/{id} {
+      allow get, list, delete: if isOwner();
+      allow create: if isIncomingOwner() && isValidHealthReport(incoming());
+      allow update: if isOwner() && isIncomingOwner() && incoming().createdAt == existing().createdAt;
+    }
+    match /messages/{id} {
+      allow get, list, delete: if isOwner();
+      allow create: if isIncomingOwner() && isValidMessage(incoming());
+      allow update: if isOwner() && isIncomingOwner() && incoming().createdAt == existing().createdAt;
+    }
+  }
+}

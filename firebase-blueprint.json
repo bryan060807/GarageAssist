@@ -1,0 +1,94 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["mechanic", "manager", "apprentice"] },
+        "createdAt": { "type": "integer" }
+      },
+      "required": ["email", "displayName", "role", "createdAt"]
+    },
+    "Vehicle": {
+      "title": "Vehicle",
+      "description": "Customer vehicle",
+      "type": "object",
+      "properties": {
+        "make": { "type": "string" },
+        "model": { "type": "string" },
+        "year": { "type": "integer" },
+        "vin": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "integer" }
+      },
+      "required": ["make", "model", "year", "ownerId", "createdAt"]
+    },
+    "Diagnostic": {
+      "title": "Diagnostic",
+      "description": "Vehicle diagnostic result",
+      "type": "object",
+      "properties": {
+        "vehicleId": { "type": "string" },
+        "symptoms": { "type": "string" },
+        "obd2Codes": { "type": "string" }, // can be comma separated
+        "aiDiagnosis": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "integer" }
+      },
+      "required": ["vehicleId", "ownerId", "createdAt"]
+    },
+    "Inspection": {
+      "title": "Inspection",
+      "description": "Photo-based inspection",
+      "type": "object",
+      "properties": {
+        "vehicleId": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "notes": { "type": "string" },
+        "aiAnalysis": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "integer" }
+      },
+      "required": ["vehicleId", "photoUrl", "ownerId", "createdAt"]
+    },
+    "Part": {
+      "title": "Part",
+      "description": "Part sourced or needed",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "sku": { "type": "string" },
+        "status": { "type": "string", "enum": ["Needed", "Ordered", "In Stock"] },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "integer" }
+      },
+      "required": ["name", "status", "ownerId", "createdAt"]
+    },
+    "HealthReport": {
+      "title": "Health Report",
+      "description": "Comprehensive vehicle health report",
+      "type": "object",
+      "properties": {
+        "vehicleId": { "type": "string" },
+        "title": { "type": "string" },
+        "summary": { "type": "string" },
+        "estimatedCost": { "type": "number" },
+        "isSafeToDrive": { "type": "boolean" },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "integer" }
+      },
+      "required": ["vehicleId", "title", "ownerId", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": { "schema": "User", "description": "User profile" },
+    "/vehicles/{id}": { "schema": "Vehicle", "description": "Vehicles" },
+    "/diagnostics/{id}": { "schema": "Diagnostic", "description": "Diagnostics" },
+    "/inspections/{id}": { "schema": "Inspection", "description": "Inspections" },
+    "/parts/{id}": { "schema": "Part", "description": "Parts" },
+    "/health_reports/{id}": { "schema": "HealthReport", "description": "Health Reports" }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "GarageAssist",
+  "description": "AI-powered mechanic assistant for diagnostics, OBD2 decoding, repair guidance, and part sourcing.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": []
+}
