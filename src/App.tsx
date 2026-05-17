@@ -45,7 +45,6 @@ export default function App() {
             <Route path="parts" element={<Parts />} />
             <Route path="reports" element={<HealthReports />} />
             <Route path="chat" element={<Chat />} />
-            <Route path="live" element={<Chat />} />
             <Route path="ask-ai" element={<AskAI />} />
             <Route path="settings" element={<Settings />} />
             <Route path="*" element={<Navigate to="/" replace />} />

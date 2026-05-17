@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { useAppStore } from '../store/useAppStore';
 import { collection, addDoc, deleteDoc, updateDoc, doc } from 'firebase/firestore';
 import { db, auth, handleFirestoreError, OperationType } from '../services/firebase';
-import { PackageSearch, Plus, Trash2, ExternalLink, ShoppingCart, Car } from 'lucide-react';
+import { PackageSearch, Plus, Trash2, ExternalLink, ShoppingCart, Car, Sparkles, Loader2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import { suggestPartPurchase } from '../lib/geminiAgent';
 
 export function Parts() {
   const { parts, vehicles } = useAppStore();
@@ -12,6 +14,20 @@ export function Parts() {
   const [vehicleId, setVehicleId] = useState('');
   const [status, setStatus] = useState<'Needed' | 'Ordered' | 'In Stock'>('Needed');
   const [isSaving, setIsSaving] = useState(false);
+  const [loadingSuggestions, setLoadingSuggestions] = useState<Record<string, boolean>>({});
+
+  const handleGetSuggestion = async (pId: string, partName: string, vehicleStr: string) => {
+    setLoadingSuggestions(prev => ({ ...prev, [pId]: true }));
+    try {
+      const suggestion = await suggestPartPurchase(partName, vehicleStr);
+      await updateDoc(doc(db, 'parts', pId), { aiSuggestion: suggestion });
+    } catch(err) {
+      console.error(err);
+      alert('Failed to get suggestion.');
+    } finally {
+      setLoadingSuggestions(prev => ({ ...prev, [pId]: false }));
+    }
+  };
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,7 +143,7 @@ export function Parts() {
                   </p>
                 )}
                 
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="mt-4 flex flex-wrap gap-2 items-center">
                   <span className="text-xs font-bold text-[#A3A3A3] uppercase mr-2 flex items-center">
                     <ShoppingCart className="w-3 h-3 mr-1" /> Quick Order:
                   </span>
@@ -143,7 +159,27 @@ export function Parts() {
                   <a href={urls.rockauto} target="_blank" rel="noopener noreferrer" className="text-xs px-3 py-1.5 bg-[#0A0A0A] border border-[#2A2A2A] rounded hover:border-[#D4AF37] text-[#E5E5E5] flex items-center gap-1">
                     RockAuto <ExternalLink className="w-3 h-3" />
                   </a>
+                  
+                  {!p.aiSuggestion ? (
+                    <button
+                      onClick={() => handleGetSuggestion(p.id, p.name, v ? `${v.year} ${v.make} ${v.model}` : 'Generic')}
+                      disabled={loadingSuggestions[p.id]}
+                      className="text-xs px-3 py-1.5 bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/20 rounded hover:bg-[#D4AF37]/20 flex items-center gap-1 ml-auto disabled:opacity-50"
+                    >
+                      {loadingSuggestions[p.id] ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                      {loadingSuggestions[p.id] ? 'Looking up...' : 'Smart Pricing Suggestion'}
+                    </button>
+                  ) : null}
                 </div>
+                
+                {p.aiSuggestion && (
+                  <div className="mt-3 bg-[#D4AF37]/5 border border-[#D4AF37]/20 p-3 rounded-lg flex items-start gap-3">
+                    <Sparkles className="w-4 h-4 text-[#D4AF37] shrink-0 mt-0.5" />
+                    <div className="prose prose-invert prose-xs text-[#E5E5E5] prose-strong:text-[#D4AF37]">
+                      <ReactMarkdown>{p.aiSuggestion}</ReactMarkdown>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-4 w-full md:w-auto">

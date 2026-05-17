@@ -55,6 +55,7 @@ export interface Part {
   status: 'Needed' | 'Ordered' | 'In Stock';
   ownerId: string;
   createdAt: number;
+  aiSuggestion?: string;
 }
 
 export interface HealthReport {

@@ -295,6 +295,26 @@ Output in clean Markdown.`;
   }
 }
 
+export async function suggestPartPurchase(partName: string, vehicleStr: string) {
+  try {
+    const prompt = `You are a savvy auto parts shopper.
+I need to buy a "${partName}" for a "${vehicleStr || 'general vehicle'}".
+Which online auto parts retailer (e.g., RockAuto, Amazon, 1A Auto, PartsGeek, eBay Motors, or local stores like AutoZone/O'Reilly) typically has the cheapest reliable option for this specific type of part?
+Please provide a brief 2-sentence recommendation on where to buy it and a rough estimated cost context.
+Search the web for current pricing if possible.`;
+
+    const response = await getAi().models.generateContent({
+      model: 'gemini-3.1-pro-preview',
+      contents: prompt,
+      tools: [{ googleSearch: {} }]
+    });
+    return response.text;
+  } catch (error: any) {
+    console.error("Part Suggestion AI Error:", error);
+    throw new Error(error.message || "Failed to get part suggestion.");
+  }
+}
+
 export async function generateHealthReport(vehicleStr: string, diagnosticsText: string, inspectionsText: string) {
   try {
     const prompt = `You are an expert automotive inspector. Create a comprehensive Vehicle Health Report for a ${vehicleStr}.

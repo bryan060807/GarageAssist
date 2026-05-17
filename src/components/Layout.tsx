@@ -55,9 +55,8 @@ export function Layout() {
     { name: 'Photo Inspections', path: '/inspections', icon: Camera },
     { name: 'Parts & Sourcing', path: '/parts', icon: PackageSearch },
     { name: 'Health Reports', path: '/reports', icon: FileText },
-    { name: 'Live Team Chat', path: '/chat', icon: Users },
+    { name: 'Live Chat & Voice', path: '/chat', icon: Users },
     { name: 'Ask AI (Text)', path: '/ask-ai', icon: Bot },
-    { name: 'Live Voice Assist', path: '/live', icon: Mic },
   ];
 
   return (
